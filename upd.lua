@@ -909,7 +909,7 @@ local v2SelectedPetToAdd = nil
 local v2SelectedLeveling = nil
 local v2LevelingQueue = {}
 local v2CurrentQueueIndex = 1
-local v2FerretSlot = 5       -- Default slot 5
+local v2FerretSlot = 4       -- Default slot 4
 local v2TargetLevel = 100    -- Default target level
 local v2AutoEnabled = false
 local v2PetEquipped = false
@@ -920,7 +920,7 @@ LevelingV2Tab:Dropdown({
     Title = "Ferret Slot",
     Desc = "Slot containing French Fry Ferret (2-3 recommended)",
     Values = {"Slot 1", "Slot 2", "Slot 3", "Slot 4", "Slot 5", "Slot 6"},
-    Value = "Slot 5",
+    Value = "Slot 4",
     Callback = function(v)
         v2FerretSlot = tonumber(v:match("%d"))
     end
@@ -2133,7 +2133,7 @@ task.spawn(function()
         end
         
         local lvlEquippedTxt = lvlPetEquipped and "✅ Yes" or "❌ No"
-        local lvlQueueTxt = string.format("%d/%d", lvlCurrentQueueIndex, #lvlLevelingQueue)
+        local lvlQueueTxt = #lvlLevelingQueue > 0 and string.format("%d/%d", lvlCurrentQueueIndex, #lvlLevelingQueue) or "0/0"
         
         LvlInfoParagraph:SetDesc(string.format(
             "⏱ Cooldown: %s\n📍 Slot: %s\n🐾 Pet: %s\n🏷 Type: %s\n✨ Mutation: %s%s\n📊 Age: %d/%d\n📋 Queue: %s\n✅ Done: %d\n🔌 Equipped: %s\n⚡ Mode: %s",
@@ -2266,8 +2266,8 @@ task.spawn(function()
         
         if V2InfoParagraph then
             V2InfoParagraph:SetDesc(string.format(
-                "📍 Slot: %d\n🐾 Pet: %s\n🏷 Type: %s\n📊 Age: %d/%d\n🍟 Triggers: %d\n📋 Queue: %s\n✅ Done: %d\n🔌 Equipped: %s\n⚡ Mode: %s",
-                v2FerretSlot,
+                "📍 Slot: %s\n🐾 Pet: %s\n🏷 Type: %s\n📊 Age: %d/%d\n🍟 Triggers: %d\n📋 Queue: %s\n✅ Done: %d\n🔌 Equipped: %s\n⚡ Mode: %s",
+                slotTxt,
                 v2PetName,
                 v2PetType,
                 v2PetAge,
@@ -2399,7 +2399,7 @@ task.spawn(function()
         
         local phaseTxt = nmPhase == "MUTATION" and "🌙 MUTATION" or "📈 LEVELING"
         local equippedTxt = nmPetEquipped and "✅ Yes" or "❌ No"
-        local queueTxt = string.format("%d/%d", currentQueueIndex, #levelingQueue)
+        local queueTxt = #levelingQueue > 0 and string.format("%d/%d", currentQueueIndex, #levelingQueue) or "0/0"
         
         NmInfoParagraph:SetDesc(string.format(
             "📍 Phase: %s\n⏱ Cooldown: %s\n📍 Slot: %s\n🐾 Pet: %s\n🏷 Type: %s\n✨ Mutation: %s%s\n📊 Age: %d/%d\n📋 Queue: %s\n✅ Done: %d\n🔌 Equipped: %s\n⚡ Mode: %s",
@@ -2642,7 +2642,7 @@ task.spawn(function()
         
         local elPhaseTxt = elPhase == "ELEPHANT" and "🐘 ELEPHANT" or "📈 LEVELING"
         local elEquippedTxt = elPetEquipped and "✅ Yes" or "❌ No"
-        local elQueueTxt = string.format("%d/%d", elCurrentQueueIndex, #elLevelingQueue)
+        local elQueueTxt = #elLevelingQueue > 0 and string.format("%d/%d", elCurrentQueueIndex, #elLevelingQueue) or "0/0"
         local elMimicCdTxt = (mimicRemain and string.format("%.2fs", mimicRemain) or "—")
         local elElephantCdTxt = (elephantRemain and string.format("%.2fs", elephantRemain) or "—")
         
