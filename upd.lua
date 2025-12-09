@@ -114,7 +114,7 @@ local function sendWebhook(title, description, color, fields)
         description = description,
         color = color or 5763719,
         fields = fields or {},
-        footer = {text = "Grow a Garden • Marf Hub v1.2"},
+        footer = {text = "Grow a Garden • Marf Hub v1.1"},
         timestamp = os.date("!%Y-%m-%dT%H:%M:%SZ")
     }
     
@@ -260,7 +260,7 @@ if Notification then
             
             -- Check for Ferret notification (Leveling V2)
             -- Level +1: "🍟 French Fry Ferret increased a Peacock's level by 1!"
-            -- Max level: "🍟 French Fry Ferret couldn't find a pet to increase level, so it shared some fries with Peacock!"
+            -- Max level: "🍟 French Fry Ferret couldn't find a pet to increase level..."
             if message:find("French Fry Ferret increased") then
                 lastFerretResult = "LevelUp"
                 v2TriggerCount = v2TriggerCount + 1
@@ -519,11 +519,11 @@ local function formatPetForDropdown(pet)
 end
 
 --==============================================================--
--- AUTO LEVELING V1 TAB
+-- LEVELING TAB (Enhanced - Same as Auto Nightmare without mutation)
 --==============================================================--
 MainTab:Paragraph({
-    Title = "🐾 Auto Leveling V1",
-    Desc = "Level up with Mimic + Dilophosaurus!\n• Best for level 1-50\n• Queue system for batch leveling\n• Auto slot switching",
+    Title = "🐾 Auto Leveling",
+    Desc = "Level multiple pets automatically!\n• Queue system for batch leveling\n• Real-time age tracking\n• Auto equip/unequip on slot switch",
 })
 
 MainTab:Divider()
@@ -593,8 +593,6 @@ local LvlQueueParagraph = MainTab:Paragraph({
 })
 
 local function updateLvlQueueDisplay()
-    if not LvlQueueParagraph then return end
-    
     if #lvlLevelingQueue == 0 then
         LvlQueueParagraph:SetTitle("Queue (0 pets)")
         LvlQueueParagraph:SetDesc("(Empty - add pets above)")
@@ -963,7 +961,6 @@ local V2LevelingDropdown = LevelingV2Tab:Dropdown({
     Desc = "Select pet to add to queue",
     Values = {"(Refresh to load)"},
     Value = "(Refresh to load)",
-    SearchBarEnabled = true,
     Callback = function(v)
         if v == "(Select Pet)" or v == "(Refresh to load)" or v == "(No pets found)" then
             v2SelectedPetToAdd = nil
@@ -1023,6 +1020,7 @@ LevelingV2Tab:Button({
                 
                 queueText = queueText .. string.format("%d. %s [Lv.%d]\n", i, displayStr, pAge)
             end
+            
             if V2QueueParagraph then
                 V2QueueParagraph:SetTitle("Queue (" .. #v2LevelingQueue .. " pets)")
                 V2QueueParagraph:SetDesc(queueText ~= "" and queueText or "Empty")
@@ -1279,8 +1277,6 @@ local NmQueueParagraph = NightmareTab:Paragraph({
 })
 
 local function updateNmQueueDisplay()
-    if not NmQueueParagraph then return end
-    
     if #levelingQueue == 0 then
         NmQueueParagraph:SetTitle("Queue (0 pets)")
         NmQueueParagraph:SetDesc("(Empty - add pets above)")
@@ -1731,8 +1727,6 @@ local ElQueueParagraph = ElephantTab:Paragraph({
 })
 
 local function updateElQueueDisplay()
-    if not ElQueueParagraph then return end
-    
     if #elLevelingQueue == 0 then
         ElQueueParagraph:SetTitle("Queue (0 pets)")
         ElQueueParagraph:SetDesc("(Empty - add pets above)")
@@ -2139,25 +2133,23 @@ task.spawn(function()
         end
         
         local lvlEquippedTxt = lvlPetEquipped and "✅ Yes" or "❌ No"
-        local lvlQueueTxt = #lvlLevelingQueue > 0 and string.format("%d/%d", lvlCurrentQueueIndex, #lvlLevelingQueue) or "0/0"
+        local lvlQueueTxt = string.format("%d/%d", lvlCurrentQueueIndex, #lvlLevelingQueue)
         
-        if LvlInfoParagraph then
-            LvlInfoParagraph:SetDesc(string.format(
-                "⏱ Cooldown: %s\n📍 Slot: %s\n🐾 Pet: %s\n🏷 Type: %s\n✨ Mutation: %s%s\n📊 Age: %d/%d\n📋 Queue: %s\n✅ Done: %d\n🔌 Equipped: %s\n⚡ Mode: %s",
-                cdTxt,
-                slotTxt,
-                lvlPetName,
-                lvlPetType,
-                lvlMutationEmoji,
-                lvlPetMutation,
-                lvlPetAge,
-                lvlTargetLevel,
-                lvlQueueTxt,
-                #lvlCompletedPets,
-                lvlEquippedTxt,
-                lvlModeTxt
-            ))
-        end
+        LvlInfoParagraph:SetDesc(string.format(
+            "⏱ Cooldown: %s\n📍 Slot: %s\n🐾 Pet: %s\n🏷 Type: %s\n✨ Mutation: %s%s\n📊 Age: %d/%d\n📋 Queue: %s\n✅ Done: %d\n🔌 Equipped: %s\n⚡ Mode: %s",
+            cdTxt,
+            slotTxt,
+            lvlPetName,
+            lvlPetType,
+            lvlMutationEmoji,
+            lvlPetMutation,
+            lvlPetAge,
+            lvlTargetLevel,
+            lvlQueueTxt,
+            #lvlCompletedPets,
+            lvlEquippedTxt,
+            lvlModeTxt
+        ))
         
         --==============================================================--
         -- LEVELING TAB Logic
@@ -2213,7 +2205,6 @@ task.spawn(function()
                         {name = "🏷 Type", value = lvlPetType, inline = true},
                         {name = "📊 Level", value = tostring(lvlTargetLevel), inline = true},
                         {name = "📋 Queue", value = string.format("%d/%d", lvlCurrentQueueIndex, #lvlLevelingQueue), inline = true},
-                        {name = "📍 Mode", value = "Auto Leveling V1", inline = true},
                     }
                 )
                 
@@ -2254,7 +2245,7 @@ task.spawn(function()
                         {
                             {name = "✅ Completed", value = string.format("%d pets", #lvlCompletedPets), inline = true},
                             {name = "📊 Target", value = string.format("Level %d", lvlTargetLevel), inline = true},
-                            {name = "📋 Mode", value = "Auto Leveling V1", inline = true},
+                            {name = "📋 Mode", value = "Leveling", inline = true},
                         }
                     )
                 end
@@ -2408,26 +2399,24 @@ task.spawn(function()
         
         local phaseTxt = nmPhase == "MUTATION" and "🌙 MUTATION" or "📈 LEVELING"
         local equippedTxt = nmPetEquipped and "✅ Yes" or "❌ No"
-        local queueTxt = #levelingQueue > 0 and string.format("%d/%d", currentQueueIndex, #levelingQueue) or "0/0"
+        local queueTxt = string.format("%d/%d", currentQueueIndex, #levelingQueue)
         
-        if NmInfoParagraph then
-            NmInfoParagraph:SetDesc(string.format(
-                "📍 Phase: %s\n⏱ Cooldown: %s\n📍 Slot: %s\n🐾 Pet: %s\n🏷 Type: %s\n✨ Mutation: %s%s\n📊 Age: %d/%d\n📋 Queue: %s\n✅ Done: %d\n🔌 Equipped: %s\n⚡ Mode: %s",
-                phaseTxt,
-                cdTxt,
-                slotTxt,
-                petName,
-                petType,
-                mutationEmoji,
-                petMutation,
-                petAge,
-                targetLevel,
-                queueTxt,
-                #nmCompletedPets,
-                equippedTxt,
-                nmModeTxt
-            ))
-        end
+        NmInfoParagraph:SetDesc(string.format(
+            "📍 Phase: %s\n⏱ Cooldown: %s\n📍 Slot: %s\n🐾 Pet: %s\n🏷 Type: %s\n✨ Mutation: %s%s\n📊 Age: %d/%d\n📋 Queue: %s\n✅ Done: %d\n🔌 Equipped: %s\n⚡ Mode: %s",
+            phaseTxt,
+            cdTxt,
+            slotTxt,
+            petName,
+            petType,
+            mutationEmoji,
+            petMutation,
+            petAge,
+            targetLevel,
+            queueTxt,
+            #nmCompletedPets,
+            equippedTxt,
+            nmModeTxt
+        ))
         
         --==============================================================--
         -- PHASE 1: LEVELING - Level current pet to target
@@ -2653,29 +2642,27 @@ task.spawn(function()
         
         local elPhaseTxt = elPhase == "ELEPHANT" and "🐘 ELEPHANT" or "📈 LEVELING"
         local elEquippedTxt = elPetEquipped and "✅ Yes" or "❌ No"
-        local elQueueTxt = #elLevelingQueue > 0 and string.format("%d/%d", elCurrentQueueIndex, #elLevelingQueue) or "0/0"
+        local elQueueTxt = string.format("%d/%d", elCurrentQueueIndex, #elLevelingQueue)
         local elMimicCdTxt = (mimicRemain and string.format("%.2fs", mimicRemain) or "—")
         local elElephantCdTxt = (elephantRemain and string.format("%.2fs", elephantRemain) or "—")
         
-        if ElInfoParagraph then
-            ElInfoParagraph:SetDesc(string.format(
-                "📍 Phase: %s\n⏱ Mimic CD: %s\n⏱ Elephant CD: %s\n📍 Slot: %s\n🐾 Pet: %s\n🏷 Type: %s\n📊 Age: %d/%d\n⚖️ Weight: %.2f KG\n🔄 Blessings: %d\n📋 Queue: %s\n✅ Done: %d\n🔌 Equipped: %s\n⚡ Mode: %s",
-                elPhaseTxt,
-                elMimicCdTxt,
-                elElephantCdTxt,
-                slotTxt,
-                elPetName,
-                elPetType,
-                elPetAge,
-                elTargetLevel,
-                elPetWeight,
-                elBlessingCount,
-                elQueueTxt,
-                #elCompletedPets,
-                elEquippedTxt,
-                elModeTxt
-            ))
-        end
+        ElInfoParagraph:SetDesc(string.format(
+            "📍 Phase: %s\n⏱ Mimic CD: %s\n⏱ Elephant CD: %s\n📍 Slot: %s\n🐾 Pet: %s\n🏷 Type: %s\n📊 Age: %d/%d\n⚖️ Weight: %.2f KG\n🔄 Blessings: %d\n📋 Queue: %s\n✅ Done: %d\n🔌 Equipped: %s\n⚡ Mode: %s",
+            elPhaseTxt,
+            elMimicCdTxt,
+            elElephantCdTxt,
+            slotTxt,
+            elPetName,
+            elPetType,
+            elPetAge,
+            elTargetLevel,
+            elPetWeight,
+            elBlessingCount,
+            elQueueTxt,
+            #elCompletedPets,
+            elEquippedTxt,
+            elModeTxt
+        ))
         
         --==============================================================--
         -- ELEPHANT TAB Logic - PHASE 1: LEVELING
@@ -3081,7 +3068,7 @@ SettingsTab:Button({
                 {name = "🏷 Type", value = "Bald Eagle", inline = true},
                 {name = "📊 Level", value = "30", inline = true},
             },
-            footer = {text = "Grow a Garden • Marf Hub v1.2"},
+            footer = {text = "Grow a Garden • Marf Hub v1.1"},
             timestamp = os.date("!%Y-%m-%dT%H:%M:%SZ")
         }
         
@@ -3179,7 +3166,7 @@ SettingsTab:Button({
 -- Initialize
 --==============================================================--
 WindUI:Notify({
-    Title = "Marf Hub v1.2",
+    Title = "Marf Hub v1.1",
     Content = "Script loaded successfully!\nLeveling, Nightmare & Elephant tabs ready.",
     Duration = 6,
     Icon = "zap",
