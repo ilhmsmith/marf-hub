@@ -114,7 +114,7 @@ local function sendWebhook(title, description, color, fields)
         description = description,
         color = color or 5763719,
         fields = fields or {},
-        footer = {text = "Grow a Garden • Marf Hub v1.2"},
+        footer = {text = "Grow a Garden • Marf Hub v1.1"},
         timestamp = os.date("!%Y-%m-%dT%H:%M:%SZ")
     }
     
@@ -260,7 +260,7 @@ if Notification then
             
             -- Check for Ferret notification (Leveling V2)
             -- Level +1: "🍟 French Fry Ferret increased a Peacock's level by 1!"
-            -- Max level: "🍟 French Fry Ferret couldn't find a pet to increase level, so it shared some fries with Peacock!"
+            -- Max level: "🍟 French Fry Ferret couldn't find a pet to increase level..."
             if message:find("French Fry Ferret increased") then
                 lastFerretResult = "LevelUp"
                 v2TriggerCount = v2TriggerCount + 1
@@ -519,11 +519,11 @@ local function formatPetForDropdown(pet)
 end
 
 --==============================================================--
--- AUTO LEVELING V1 TAB
+-- LEVELING TAB (Enhanced - Same as Auto Nightmare without mutation)
 --==============================================================--
 MainTab:Paragraph({
-    Title = "🐾 Auto Leveling V1",
-    Desc = "Level up with Mimic + Dilophosaurus!\n• Best for level 1-50\n• Queue system for batch leveling\n• Auto slot switching",
+    Title = "🐾 Auto Leveling",
+    Desc = "Level multiple pets automatically!\n• Queue system for batch leveling\n• Real-time age tracking\n• Auto equip/unequip on slot switch",
 })
 
 MainTab:Divider()
@@ -2151,7 +2151,7 @@ task.spawn(function()
             lvlModeTxt
         ))
         
-        --==============================================================--
+--==============================================================--
         -- LEVELING TAB Logic
         --==============================================================--
         if lvlAutoEnabled and lvlSelectedLeveling then
@@ -2205,7 +2205,6 @@ task.spawn(function()
                         {name = "🏷 Type", value = lvlPetType, inline = true},
                         {name = "📊 Level", value = tostring(lvlTargetLevel), inline = true},
                         {name = "📋 Queue", value = string.format("%d/%d", lvlCurrentQueueIndex, #lvlLevelingQueue), inline = true},
-                        {name = "📍 Mode", value = "Auto Leveling V1", inline = true},
                     }
                 )
                 
@@ -2246,7 +2245,7 @@ task.spawn(function()
                         {
                             {name = "✅ Completed", value = string.format("%d pets", #lvlCompletedPets), inline = true},
                             {name = "📊 Target", value = string.format("Level %d", lvlTargetLevel), inline = true},
-                            {name = "📋 Mode", value = "Auto Leveling V1", inline = true},
+                            {name = "📋 Mode", value = "Leveling", inline = true},
                         }
                     )
                 end
@@ -3070,7 +3069,7 @@ SettingsTab:Button({
                 {name = "🏷 Type", value = "Bald Eagle", inline = true},
                 {name = "📊 Level", value = "30", inline = true},
             },
-            footer = {text = "Grow a Garden • Marf Hub v1.2"},
+            footer = {text = "Grow a Garden • Marf Hub v1.1"},
             timestamp = os.date("!%Y-%m-%dT%H:%M:%SZ")
         }
         
@@ -3168,7 +3167,7 @@ SettingsTab:Button({
 -- Initialize
 --==============================================================--
 WindUI:Notify({
-    Title = "Marf Hub v1.2",
+    Title = "Marf Hub v1.1",
     Content = "Script loaded successfully!\nLeveling, Nightmare & Elephant tabs ready.",
     Duration = 6,
     Icon = "zap",
