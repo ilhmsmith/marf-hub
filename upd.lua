@@ -55,6 +55,8 @@ local lastElephantWeight = nil  -- Total weight from notification
 -- Ferret detection via Notification (Leveling V2)
 local lastFerretResult = nil    -- nil = waiting, "LevelUp" = +1 level, "MaxLevel" = level 100
 local v2TriggerCount = 0        -- Count Ferret triggers
+local v2PetEquipped = false     -- Track if V2 pet is equipped (needed for notification check)
+local v2AutoEnabled = false     -- Track if V2 auto is enabled
 
 --==============================================================--
 -- Window & Tabs
@@ -268,9 +270,13 @@ if Notification then
                 print("[Marf Hub] Ferret +1 level! Triggers:", v2TriggerCount)
                 
             elseif message:find("couldn't find a pet to increase level") then
-                lastFerretResult = "MaxLevel"
-                
-                print("[Marf Hub] Ferret: Max level 100 reached!")
+                -- ONLY set MaxLevel if pet is currently equipped (avoid false trigger during pet swap)
+                if v2PetEquipped and v2AutoEnabled then
+                    lastFerretResult = "MaxLevel"
+                    print("[Marf Hub] Ferret: Max level 100 reached!")
+                else
+                    print("[Marf Hub] Ferret: No pet equipped, ignoring max level notification")
+                end
             end
         end
     end)
@@ -911,8 +917,7 @@ local v2LevelingQueue = {}
 local v2CurrentQueueIndex = 1
 local v2FerretSlot = 5       -- Default slot 5
 local v2TargetLevel = 100    -- Default target level
-local v2AutoEnabled = false
-local v2PetEquipped = false
+-- v2AutoEnabled and v2PetEquipped declared at top (for notification access)
 local v2CompletedPets = {}
 
 -- Pet Selection
