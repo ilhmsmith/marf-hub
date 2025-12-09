@@ -52,6 +52,10 @@ local lastMutationName = nil    -- Store the actual mutation name
 local lastElephantResult = nil  -- nil = waiting, "Blessed" = success, "MaxWeight" = cap reached
 local lastElephantWeight = nil  -- Total weight from notification
 
+-- Ferret detection via Notification (Leveling V2)
+local lastFerretResult = nil    -- nil = waiting, "LevelUp" = +1 level, "MaxLevel" = level 100
+local v2TriggerCount = 0        -- Count Ferret triggers
+
 --==============================================================--
 -- Window & Tabs
 --==============================================================--
@@ -66,8 +70,13 @@ local Window = WindUI:CreateWindow({
 })
 
 local MainTab = Window:Tab({
-    Title = "Leveling",
+    Title = "Auto Leveling V1",
     Icon = "trending-up",
+})
+
+local LevelingV2Tab = Window:Tab({
+    Title = "Auto Leveling V2",
+    Icon = "french-fries",
 })
 
 local NightmareTab = Window:Tab({
@@ -105,7 +114,7 @@ local function sendWebhook(title, description, color, fields)
         description = description,
         color = color or 5763719,
         fields = fields or {},
-        footer = {text = "Grow a Garden • Marf Hub v1.1"},
+        footer = {text = "Grow a Garden • Marf Hub v1.2"},
         timestamp = os.date("!%Y-%m-%dT%H:%M:%SZ")
     }
     
@@ -247,6 +256,21 @@ if Notification then
                 lastElephantResult = "MaxWeight"
                 
                 print("[Marf Hub] Elephant: Max weight reached!")
+            end
+            
+            -- Check for Ferret notification (Leveling V2)
+            -- Level +1: "🍟 French Fry Ferret increased a Peacock's level by 1!"
+            -- Max level: "🍟 French Fry Ferret couldn't find a pet to increase level, so it shared some fries with Peacock!"
+            if message:find("French Fry Ferret increased") then
+                lastFerretResult = "LevelUp"
+                v2TriggerCount = v2TriggerCount + 1
+                
+                print("[Marf Hub] Ferret +1 level! Triggers:", v2TriggerCount)
+                
+            elseif message:find("couldn't find a pet to increase level") then
+                lastFerretResult = "MaxLevel"
+                
+                print("[Marf Hub] Ferret: Max level 100 reached!")
             end
         end
     end)
@@ -495,11 +519,11 @@ local function formatPetForDropdown(pet)
 end
 
 --==============================================================--
--- LEVELING TAB (Enhanced - Same as Auto Nightmare without mutation)
+-- AUTO LEVELING V1 TAB
 --==============================================================--
 MainTab:Paragraph({
-    Title = "🐾 Auto Leveling",
-    Desc = "Level multiple pets automatically!\n• Queue system for batch leveling\n• Real-time age tracking\n• Auto equip/unequip on slot switch",
+    Title = "🐾 Auto Leveling V1",
+    Desc = "Level up with Mimic + Dilophosaurus!\n• Best for level 1-50\n• Queue system for batch leveling\n• Auto slot switching",
 })
 
 MainTab:Divider()
@@ -867,6 +891,319 @@ MainTab:Button({
                 Icon = "alert-triangle",
             })
         end
+    end
+})
+
+--==============================================================--
+-- AUTO LEVELING V2 TAB (Ferret)
+--==============================================================--
+LevelingV2Tab:Paragraph({
+    Title = "🍟 Auto Leveling V2",
+    Desc = "Level up with French Fry Ferret!\n• Best for level 50-100\n• Stay in one slot, no switching\n• AFK friendly",
+})
+
+LevelingV2Tab:Divider()
+
+-- Leveling V2 Tab Variables
+local v2SelectedPetToAdd = nil
+local v2SelectedLeveling = nil
+local v2LevelingQueue = {}
+local v2CurrentQueueIndex = 1
+local v2FerretSlot = 5       -- Default slot 5
+local v2TargetLevel = 100    -- Default target level
+local v2AutoEnabled = false
+local v2PetEquipped = false
+local v2CompletedPets = {}
+
+-- Ferret Slot Selection
+LevelingV2Tab:Dropdown({
+    Title = "Ferret Slot",
+    Desc = "Slot containing French Fry Ferret (2-3 recommended)",
+    Values = {"Slot 1", "Slot 2", "Slot 3", "Slot 4", "Slot 5", "Slot 6"},
+    Value = "Slot 5",
+    Callback = function(v)
+        v2FerretSlot = tonumber(v:match("%d"))
+    end
+})
+
+-- Target Level Input
+LevelingV2Tab:Input({
+    Title = "Target Level",
+    Desc = "Level pet to this age",
+    Value = "100",
+    Placeholder = "Enter target level (1-100)...",
+    Callback = function(input)
+        local num = tonumber(input)
+        if num and num >= 1 and num <= 100 then
+            v2TargetLevel = num
+            WindUI:Notify({
+                Title = "Target Set",
+                Content = string.format("Will level to %d", v2TargetLevel),
+                Duration = 3,
+                Icon = "target"
+            })
+        else
+            WindUI:Notify({
+                Title = "Invalid",
+                Content = "Enter a number between 1-100",
+                Duration = 3,
+                Icon = "alert-circle"
+            })
+        end
+    end
+})
+
+LevelingV2Tab:Divider()
+
+-- Pet Selection
+local V2LevelingDropdown = LevelingV2Tab:Dropdown({
+    Title = "Select Pet",
+    Desc = "Select pet to add to queue",
+    Values = {"(Refresh to load)"},
+    Value = "(Refresh to load)",
+    SearchBarEnabled = true,
+    Callback = function(v)
+        if v == "(Select Pet)" or v == "(Refresh to load)" or v == "(No pets found)" then
+            v2SelectedPetToAdd = nil
+            return
+        end
+        v2SelectedPetToAdd = v:match("({.+})$")
+    end
+})
+
+-- Add to Queue Button
+LevelingV2Tab:Button({
+    Title = "➕ Add to Queue",
+    Desc = "Add selected pet to leveling queue",
+    Callback = function()
+        if v2SelectedPetToAdd then
+            local petData = getPetDataFromService(v2SelectedPetToAdd)
+            local displayName = petData and (petData.name ~= "" and petData.name or petData.type) or "Unknown"
+            
+            -- Check if already in queue
+            for _, guid in ipairs(v2LevelingQueue) do
+                if guid == v2SelectedPetToAdd then
+                    WindUI:Notify({
+                        Title = "Already in Queue",
+                        Content = displayName .. " is already in the queue!",
+                        Duration = 3,
+                        Icon = "alert-circle"
+                    })
+                    return
+                end
+            end
+            
+            table.insert(v2LevelingQueue, v2SelectedPetToAdd)
+            
+            -- Set first pet as selected if this is the first
+            if #v2LevelingQueue == 1 then
+                v2SelectedLeveling = v2SelectedPetToAdd
+            end
+            
+            -- Update queue display
+            local queueText = ""
+            for i, guid in ipairs(v2LevelingQueue) do
+                local pData = getPetDataFromService(guid)
+                local pName = pData and (pData.name ~= "" and pData.name or pData.type) or "Unknown"
+                local pType = pData and pData.type or ""
+                local pAge = pData and pData.age or 0
+                
+                local displayStr = pName
+                if pName ~= pType and pType ~= "" then
+                    displayStr = pName .. " (" .. pType .. ")"
+                end
+                
+                queueText = queueText .. string.format("%d. %s [Lv.%d]\n", i, displayStr, pAge)
+            end
+            V2QueueParagraph:Set({
+                Title = "Queue (" .. #v2LevelingQueue .. " pets)",
+                Desc = queueText ~= "" and queueText or "Empty"
+            })
+            
+            WindUI:Notify({
+                Title = "Added to Queue",
+                Content = string.format("%s added! Queue: %d pets", displayName, #v2LevelingQueue),
+                Duration = 3,
+                Icon = "plus-circle"
+            })
+        else
+            WindUI:Notify({
+                Title = "Error",
+                Content = "Select a pet first!",
+                Duration = 3,
+                Icon = "alert-triangle"
+            })
+        end
+    end
+})
+
+-- Clear Queue Button
+LevelingV2Tab:Button({
+    Title = "🗑️ Clear Queue",
+    Desc = "Remove all pets from queue",
+    Color = Color3.fromRGB(255, 100, 100),
+    Callback = function()
+        v2LevelingQueue = {}
+        v2CurrentQueueIndex = 1
+        v2SelectedLeveling = nil
+        v2CompletedPets = {}
+        v2TriggerCount = 0
+        
+        V2QueueParagraph:Set({
+            Title = "Queue (0 pets)",
+            Desc = "Empty"
+        })
+        
+        WindUI:Notify({
+            Title = "Queue Cleared",
+            Content = "All pets removed from queue",
+            Duration = 3,
+            Icon = "trash-2"
+        })
+    end
+})
+
+-- Queue Display
+local V2QueueParagraph = LevelingV2Tab:Paragraph({
+    Title = "Queue (0 pets)",
+    Desc = "Empty",
+})
+
+LevelingV2Tab:Divider()
+
+-- Refresh Pet List Button
+LevelingV2Tab:Button({
+    Title = "🔄 Refresh Pet List",
+    Desc = "Reload pet list from inventory",
+    Callback = function()
+        local newList = {}
+        
+        local allPets = DataService:GetPets() or {}
+        
+        for guid, petInfo in pairs(allPets) do
+            local petType = petInfo.PetType or "Unknown"
+            local petName = petInfo.PetData and petInfo.PetData.Name or ""
+            local age = petInfo.Age or 0
+            
+            local mutationType = petInfo.MutationType or 0
+            local mutPrefix = getMutationName(mutationType)
+            if mutPrefix == "Normal" or mutPrefix == "None" then mutPrefix = "" end
+            
+            local displayName
+            if petName and petName ~= "" then
+                displayName = string.format("%s (%s%s) [Lv.%d] {%s}", petName, mutPrefix ~= "" and mutPrefix.." " or "", petType, age, guid)
+            else
+                displayName = string.format("%s%s [Lv.%d] {%s}", mutPrefix ~= "" and mutPrefix.." " or "", petType, age, guid)
+            end
+            table.insert(newList, displayName)
+        end
+        
+        table.sort(newList)
+        
+        if #newList == 0 then
+            newList = {"(No pets found)"}
+        end
+        
+        V2LevelingDropdown:Refresh(newList)
+        
+        WindUI:Notify({
+            Title = "Refreshed",
+            Content = string.format("Found %d pets", #newList),
+            Duration = 3,
+            Icon = "refresh-cw"
+        })
+    end
+})
+
+LevelingV2Tab:Divider()
+
+-- Auto Toggle
+local V2AutoToggle = LevelingV2Tab:Toggle({
+    Title = "Auto Level",
+    Desc = "Start automatic leveling with Ferret",
+    Icon = "play",
+    Value = false,
+    Callback = function(state)
+        if state then
+            if #v2LevelingQueue == 0 then
+                WindUI:Notify({
+                    Title = "Error",
+                    Content = "Add pets to queue first!",
+                    Duration = 3,
+                    Icon = "alert-triangle"
+                })
+                V2AutoToggle:Set(false)
+                return
+            end
+            
+            -- Initialize
+            v2CurrentQueueIndex = 1
+            v2SelectedLeveling = v2LevelingQueue[1]
+            v2CompletedPets = {}
+            v2TriggerCount = 0
+            lastFerretResult = nil
+            
+            -- Switch to Ferret slot
+            swapTo(visualToInternal(v2FerretSlot))
+            
+            WindUI:Notify({
+                Title = "🍟 Auto Level V2 Started",
+                Content = string.format("Leveling %d pets to Level %d", #v2LevelingQueue, v2TargetLevel),
+                Duration = 5,
+                Icon = "play"
+            })
+        else
+            -- Unequip pet when turning off
+            if v2PetEquipped and v2SelectedLeveling then
+                pcall(function()
+                    PetsService:FireServer("UnequipPet", v2SelectedLeveling)
+                end)
+                v2PetEquipped = false
+            end
+            
+            WindUI:Notify({
+                Title = "Auto Level V2 Stopped",
+                Content = "Leveling paused",
+                Duration = 3,
+                Icon = "pause"
+            })
+        end
+        
+        v2AutoEnabled = state
+    end
+})
+
+LevelingV2Tab:Divider()
+
+-- Status Information
+local V2InfoParagraph = LevelingV2Tab:Paragraph({
+    Title = "Status Information",
+    Desc = "📍 Slot: —\n🐾 Pet: —\n🏷 Type: —\n📊 Age: 0/100\n🍟 Triggers: 0\n📋 Queue: 0/0\n✅ Done: 0\n🔌 Equipped: ❌\n⚡ Mode: OFF",
+})
+
+LevelingV2Tab:Divider()
+
+-- Reset Progress Button
+LevelingV2Tab:Button({
+    Title = "🔄 Reset Progress",
+    Desc = "Reset queue index and completed pets",
+    Color = Color3.fromRGB(255, 200, 100),
+    Callback = function()
+        v2CurrentQueueIndex = 1
+        v2CompletedPets = {}
+        v2TriggerCount = 0
+        lastFerretResult = nil
+        
+        if #v2LevelingQueue > 0 then
+            v2SelectedLeveling = v2LevelingQueue[1]
+        end
+        
+        WindUI:Notify({
+            Title = "Progress Reset",
+            Content = "Starting from first pet in queue",
+            Duration = 3,
+            Icon = "refresh-cw"
+        })
     end
 })
 
@@ -1868,6 +2205,7 @@ task.spawn(function()
                         {name = "🏷 Type", value = lvlPetType, inline = true},
                         {name = "📊 Level", value = tostring(lvlTargetLevel), inline = true},
                         {name = "📋 Queue", value = string.format("%d/%d", lvlCurrentQueueIndex, #lvlLevelingQueue), inline = true},
+                        {name = "📍 Mode", value = "Auto Leveling V1", inline = true},
                     }
                 )
                 
@@ -1908,7 +2246,134 @@ task.spawn(function()
                         {
                             {name = "✅ Completed", value = string.format("%d pets", #lvlCompletedPets), inline = true},
                             {name = "📊 Target", value = string.format("Level %d", lvlTargetLevel), inline = true},
-                            {name = "📋 Mode", value = "Leveling", inline = true},
+                            {name = "📋 Mode", value = "Auto Leveling V1", inline = true},
+                        }
+                    )
+                end
+            end
+        end
+        
+        --==============================================================--
+        -- LEVELING V2 TAB UI Update
+        --==============================================================--
+        local v2ModeTxt = v2AutoEnabled and "🟢 ON" or "🔴 OFF"
+        local v2PetData = getPetDataFromService(v2SelectedLeveling)
+        local v2PetName = v2PetData and (v2PetData.name ~= "" and v2PetData.name or "—") or "—"
+        local v2PetType = v2PetData and v2PetData.type or "—"
+        local v2PetAge = v2PetData and v2PetData.age or 0
+        
+        local v2EquipTxt = v2PetEquipped and "✅ Yes" or "❌ No"
+        
+        V2InfoParagraph:Set({
+            Title = "Status Information",
+            Desc = string.format(
+                "📍 Slot: %d\n🐾 Pet: %s\n🏷 Type: %s\n📊 Age: %d/%d\n🍟 Triggers: %d\n📋 Queue: %d/%d\n✅ Done: %d\n🔌 Equipped: %s\n⚡ Mode: %s",
+                v2FerretSlot,
+                v2PetName,
+                v2PetType,
+                v2PetAge,
+                v2TargetLevel,
+                v2TriggerCount,
+                v2CurrentQueueIndex,
+                #v2LevelingQueue,
+                #v2CompletedPets,
+                v2EquipTxt,
+                v2ModeTxt
+            )
+        })
+        
+        --==============================================================--
+        -- LEVELING V2 TAB Logic
+        --==============================================================--
+        if v2AutoEnabled and v2SelectedLeveling and #v2LevelingQueue > 0 then
+            local v2CurrentPetData = getPetDataFromService(v2SelectedLeveling)
+            local v2CurrentAge = v2CurrentPetData and v2CurrentPetData.age or 0
+            local v2CurrentName = v2CurrentPetData and (v2CurrentPetData.name ~= "" and v2CurrentPetData.name or v2CurrentPetData.type) or "Unknown"
+            local v2CurrentType = v2CurrentPetData and v2CurrentPetData.type or "Unknown"
+            
+            -- Equip pet if not equipped
+            if not v2PetEquipped then
+                pcall(function()
+                    PetsService:FireServer("EquipPet", v2SelectedLeveling)
+                end)
+                v2PetEquipped = true
+                lastFerretResult = nil
+            end
+            
+            -- Check if pet reached target level OR max level notification
+            if v2CurrentAge >= v2TargetLevel or lastFerretResult == "MaxLevel" then
+                -- Unequip pet
+                if v2PetEquipped then
+                    pcall(function()
+                        PetsService:FireServer("UnequipPet", v2SelectedLeveling)
+                    end)
+                    v2PetEquipped = false
+                end
+                
+                local completionReason = lastFerretResult == "MaxLevel" and "Max Level 100!" or string.format("Level %d!", v2TargetLevel)
+                
+                WindUI:Notify({
+                    Title = "✅ Level Complete!",
+                    Content = string.format("%s reached %s", v2CurrentName, completionReason),
+                    Duration = 5,
+                    Icon = "check-circle"
+                })
+                
+                -- Webhook: Level Complete (V2)
+                sendWebhook(
+                    "✅ Level Complete!",
+                    "Pet has reached target level",
+                    5763719,
+                    {
+                        {name = "🐾 Pet", value = v2CurrentName, inline = true},
+                        {name = "🏷 Type", value = v2CurrentType, inline = true},
+                        {name = "📊 Level", value = tostring(v2CurrentAge), inline = true},
+                        {name = "🍟 Triggers", value = tostring(v2TriggerCount), inline = true},
+                        {name = "📋 Queue", value = string.format("%d/%d", v2CurrentQueueIndex, #v2LevelingQueue), inline = true},
+                        {name = "📍 Mode", value = "Auto Leveling V2", inline = true},
+                    }
+                )
+                
+                -- Add to completed
+                table.insert(v2CompletedPets, v2SelectedLeveling)
+                lastFerretResult = nil
+                
+                -- Move to next pet in queue
+                if v2CurrentQueueIndex < #v2LevelingQueue then
+                    v2CurrentQueueIndex = v2CurrentQueueIndex + 1
+                    v2SelectedLeveling = v2LevelingQueue[v2CurrentQueueIndex]
+                    v2TriggerCount = 0  -- Reset trigger count for new pet
+                    
+                    local nextPetData = getPetDataFromService(v2SelectedLeveling)
+                    local nextPetName = nextPetData and (nextPetData.name ~= "" and nextPetData.name or nextPetData.type) or "Unknown"
+                    
+                    WindUI:Notify({
+                        Title = "🔄 Next Pet",
+                        Content = string.format("Now leveling: %s (%d/%d)", nextPetName, v2CurrentQueueIndex, #v2LevelingQueue),
+                        Duration = 5,
+                        Icon = "arrow-right"
+                    })
+                else
+                    -- ALL DONE!
+                    v2AutoEnabled = false
+                    V2AutoToggle:Set(false)
+                    
+                    WindUI:Notify({
+                        Title = "🎉 ALL COMPLETE!",
+                        Content = string.format("All %d pets reached target level!", #v2CompletedPets),
+                        Duration = 15,
+                        Icon = "award"
+                    })
+                    
+                    -- Webhook: All Complete (V2)
+                    sendWebhook(
+                        "🎉 ALL COMPLETE!",
+                        "All pets in queue have been leveled!",
+                        5814783,
+                        {
+                            {name = "✅ Completed", value = string.format("%d pets", #v2CompletedPets), inline = true},
+                            {name = "📊 Target", value = string.format("Level %d", v2TargetLevel), inline = true},
+                            {name = "📍 Mode", value = "Auto Leveling V2", inline = true},
                         }
                     )
                 end
@@ -2605,7 +3070,7 @@ SettingsTab:Button({
                 {name = "🏷 Type", value = "Bald Eagle", inline = true},
                 {name = "📊 Level", value = "30", inline = true},
             },
-            footer = {text = "Grow a Garden • Marf Hub v1.1"},
+            footer = {text = "Grow a Garden • Marf Hub v1.2"},
             timestamp = os.date("!%Y-%m-%dT%H:%M:%SZ")
         }
         
@@ -2703,7 +3168,7 @@ SettingsTab:Button({
 -- Initialize
 --==============================================================--
 WindUI:Notify({
-    Title = "Marf Hub v1.1",
+    Title = "Marf Hub v1.2",
     Content = "Script loaded successfully!\nLeveling, Nightmare & Elephant tabs ready.",
     Duration = 6,
     Icon = "zap",
