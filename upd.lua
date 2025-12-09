@@ -915,52 +915,13 @@ local v2AutoEnabled = false
 local v2PetEquipped = false
 local v2CompletedPets = {}
 
--- Ferret Slot Selection
-LevelingV2Tab:Dropdown({
-    Title = "Ferret Slot",
-    Desc = "Slot containing French Fry Ferret (2-3 recommended)",
-    Values = {"Slot 1", "Slot 2", "Slot 3", "Slot 4", "Slot 5", "Slot 6"},
-    Value = "Slot 4",
-    Callback = function(v)
-        v2FerretSlot = tonumber(v:match("%d"))
-    end
-})
-
--- Target Level Input
-LevelingV2Tab:Input({
-    Title = "Target Level",
-    Desc = "Level pet to this age",
-    Value = "100",
-    Placeholder = "Enter target level (1-100)...",
-    Callback = function(input)
-        local num = tonumber(input)
-        if num and num >= 1 and num <= 100 then
-            v2TargetLevel = num
-            WindUI:Notify({
-                Title = "Target Set",
-                Content = string.format("Will level to %d", v2TargetLevel),
-                Duration = 3,
-                Icon = "target"
-            })
-        else
-            WindUI:Notify({
-                Title = "Invalid",
-                Content = "Enter a number between 1-100",
-                Duration = 3,
-                Icon = "alert-circle"
-            })
-        end
-    end
-})
-
-LevelingV2Tab:Divider()
-
--- Pet Selection
+-- Pet Selection (same position as V1)
 local V2LevelingDropdown = LevelingV2Tab:Dropdown({
-    Title = "Select Pet",
-    Desc = "Select pet to add to queue",
+    Title = "Select Leveling Pet",
+    Desc = "Select pet to add to leveling queue",
     Values = {"(Refresh to load)"},
     Value = "(Refresh to load)",
+    SearchBarEnabled = true,
     Callback = function(v)
         if v == "(Select Pet)" or v == "(Refresh to load)" or v == "(No pets found)" then
             v2SelectedPetToAdd = nil
@@ -970,16 +931,18 @@ local V2LevelingDropdown = LevelingV2Tab:Dropdown({
     end
 })
 
--- Queue Display (declared first so buttons can use it)
+-- Queue Display (with Green color like V1)
 local V2QueueParagraph = LevelingV2Tab:Paragraph({
     Title = "Queue (0 pets)",
-    Desc = "Empty",
+    Desc = "(Empty - add pets above)",
+    Color = "Green",
 })
 
 -- Add to Queue Button
 LevelingV2Tab:Button({
-    Title = "➕ Add to Queue",
+    Title = "Add to Queue",
     Desc = "Add selected pet to leveling queue",
+    Icon = "plus",
     Callback = function()
         if v2SelectedPetToAdd then
             local petData = getPetDataFromService(v2SelectedPetToAdd)
@@ -1023,7 +986,7 @@ LevelingV2Tab:Button({
             
             if V2QueueParagraph then
                 V2QueueParagraph:SetTitle("Queue (" .. #v2LevelingQueue .. " pets)")
-                V2QueueParagraph:SetDesc(queueText ~= "" and queueText or "Empty")
+                V2QueueParagraph:SetDesc(queueText ~= "" and queueText or "(Empty - add pets above)")
             end
             
             WindUI:Notify({
@@ -1043,10 +1006,11 @@ LevelingV2Tab:Button({
     end
 })
 
--- Clear Queue Button
+-- Clear Queue Button (Red like V1)
 LevelingV2Tab:Button({
-    Title = "🗑️ Clear Queue",
+    Title = "Clear Queue",
     Desc = "Remove all pets from queue",
+    Icon = "trash-2",
     Color = Color3.fromRGB(255, 100, 100),
     Callback = function()
         v2LevelingQueue = {}
@@ -1057,7 +1021,7 @@ LevelingV2Tab:Button({
         
         if V2QueueParagraph then
             V2QueueParagraph:SetTitle("Queue (0 pets)")
-            V2QueueParagraph:SetDesc("Empty")
+            V2QueueParagraph:SetDesc("(Empty - add pets above)")
         end
         
         WindUI:Notify({
@@ -1071,10 +1035,49 @@ LevelingV2Tab:Button({
 
 LevelingV2Tab:Divider()
 
+-- Ferret Slot Selection (same position as Leveling Slot in V1)
+LevelingV2Tab:Dropdown({
+    Title = "Ferret Slot",
+    Desc = "Slot containing French Fry Ferret (2-3 recommended)",
+    Values = {"Slot 1", "Slot 2", "Slot 3", "Slot 4", "Slot 5", "Slot 6"},
+    Value = "Slot 4",
+    Callback = function(v)
+        v2FerretSlot = tonumber(v:match("%d"))
+    end
+})
+
+-- Target Level Input
+LevelingV2Tab:Input({
+    Title = "Target Level",
+    Desc = "Stop leveling when pet reaches this level",
+    Value = "100",
+    Placeholder = "Enter target level (1-100)...",
+    Callback = function(input)
+        local num = tonumber(input)
+        if num and num >= 1 and num <= 100 then
+            v2TargetLevel = num
+            WindUI:Notify({
+                Title = "Target Set",
+                Content = string.format("Will level to %d", v2TargetLevel),
+                Duration = 3,
+                Icon = "target"
+            })
+        else
+            WindUI:Notify({
+                Title = "Invalid",
+                Content = "Enter a number between 1-100",
+                Duration = 3,
+                Icon = "alert-circle"
+            })
+        end
+    end
+})
+
 -- Refresh Pet List Button
 LevelingV2Tab:Button({
-    Title = "🔄 Refresh Pet List",
-    Desc = "Reload pet list from inventory",
+    Title = "Refresh Pet List",
+    Desc = "Load all pets from your inventory",
+    Icon = "refresh-cw",
     Callback = function()
         local newList = {}
         
@@ -1114,8 +1117,6 @@ LevelingV2Tab:Button({
         })
     end
 })
-
-LevelingV2Tab:Divider()
 
 -- Auto Toggle
 local V2AutoToggle = LevelingV2Tab:Toggle({
@@ -1185,9 +1186,9 @@ LevelingV2Tab:Divider()
 
 -- Reset Progress Button
 LevelingV2Tab:Button({
-    Title = "🔄 Reset Progress",
-    Desc = "Reset queue index and completed pets",
-    Color = Color3.fromRGB(255, 200, 100),
+    Title = "Reset Progress",
+    Desc = "Reset queue index and start from first pet",
+    Icon = "refresh-cw",
     Callback = function()
         v2CurrentQueueIndex = 1
         v2CompletedPets = {}
