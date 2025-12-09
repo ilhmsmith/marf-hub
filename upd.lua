@@ -53,9 +53,8 @@ local lastElephantResult = nil  -- nil = waiting, "Blessed" = success, "MaxWeigh
 local lastElephantWeight = nil  -- Total weight from notification
 
 -- Ferret detection via Notification (Leveling V2)
-local lastFerretResult = nil    -- nil = waiting, "LevelUp" = +1 level, "MaxLevel" = level 100
 local v2TriggerCount = 0        -- Count Ferret triggers
-local v2PetEquipped = false     -- Track if V2 pet is equipped (needed for notification check)
+local v2PetEquipped = false     -- Track if V2 pet is equipped
 local v2AutoEnabled = false     -- Track if V2 auto is enabled
 
 --==============================================================--
@@ -262,21 +261,9 @@ if Notification then
             
             -- Check for Ferret notification (Leveling V2)
             -- Level +1: "🍟 French Fry Ferret increased a Peacock's level by 1!"
-            -- Max level: "🍟 French Fry Ferret couldn't find a pet to increase level..."
             if message:find("French Fry Ferret increased") then
-                lastFerretResult = "LevelUp"
                 v2TriggerCount = v2TriggerCount + 1
-                
                 print("[Marf Hub] Ferret +1 level! Triggers:", v2TriggerCount)
-                
-            elseif message:find("couldn't find a pet to increase level") then
-                -- ONLY set MaxLevel if pet is currently equipped (avoid false trigger during pet swap)
-                if v2PetEquipped and v2AutoEnabled then
-                    lastFerretResult = "MaxLevel"
-                    print("[Marf Hub] Ferret: Max level 100 reached!")
-                else
-                    print("[Marf Hub] Ferret: No pet equipped, ignoring max level notification")
-                end
             end
         end
     end)
@@ -461,11 +448,6 @@ local function getPetDataFromService(guid)
     end
     
     return nil
-end
-
--- Calculate current weight from base weight and age
-local function getCurrentWeight(baseWeight, age)
-    return baseWeight * (1 + age / 10)
 end
 
 -- Get all pets from DataService (filter out PetTemplate)
@@ -1145,7 +1127,6 @@ local V2AutoToggle = LevelingV2Tab:Toggle({
             v2SelectedLeveling = v2LevelingQueue[1]
             v2CompletedPets = {}
             v2TriggerCount = 0
-            lastFerretResult = nil
             
             -- Switch to Ferret slot
             swapTo(visualToInternal(v2FerretSlot))
@@ -1202,7 +1183,6 @@ LevelingV2Tab:Button({
         v2CompletedPets = {}
         v2CurrentQueueIndex = 1
         v2TriggerCount = 0
-        lastFerretResult = nil
         if #v2LevelingQueue > 0 then
             v2SelectedLeveling = v2LevelingQueue[1]
         end
@@ -2341,7 +2321,6 @@ task.spawn(function()
                     PetsService:FireServer("EquipPet", v2SelectedLeveling)
                 end)
                 v2PetEquipped = true
-                lastFerretResult = nil
             end
             
             -- Check if pet reached target level (realtime age check)
@@ -2378,7 +2357,6 @@ task.spawn(function()
                 
                 -- Add to completed
                 table.insert(v2CompletedPets, v2SelectedLeveling)
-                lastFerretResult = nil
                 
                 -- Move to next pet in queue
                 if v2CurrentQueueIndex < #v2LevelingQueue then
