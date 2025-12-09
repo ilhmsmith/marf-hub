@@ -915,7 +915,7 @@ local v2SelectedPetToAdd = nil
 local v2SelectedLeveling = nil
 local v2LevelingQueue = {}
 local v2CurrentQueueIndex = 1
-local v2FerretSlot = 5       -- Default slot 5
+local v2FerretSlot = 4       -- Default slot 4
 local v2TargetLevel = 100    -- Default target level
 -- v2AutoEnabled and v2PetEquipped declared at top (for notification access)
 local v2CompletedPets = {}
@@ -1049,7 +1049,7 @@ LevelingV2Tab:Dropdown({
     Title = "Ferret Slot",
     Desc = "Slot containing French Fry Ferret (2-3 recommended)",
     Values = {"Slot 1", "Slot 2", "Slot 3", "Slot 4", "Slot 5", "Slot 6"},
-    Value = "Slot 5",
+    Value = "Slot 4",
     Callback = function(v)
         v2FerretSlot = tonumber(v:match("%d"))
     end
@@ -2344,8 +2344,8 @@ task.spawn(function()
                 lastFerretResult = nil
             end
             
-            -- Check if pet reached target level OR max level notification
-            if v2CurrentAge >= v2TargetLevel or lastFerretResult == "MaxLevel" then
+            -- Check if pet reached target level (realtime age check)
+            if v2CurrentAge >= v2TargetLevel then
                 -- Unequip pet
                 if v2PetEquipped then
                     pcall(function()
@@ -2354,11 +2354,9 @@ task.spawn(function()
                     v2PetEquipped = false
                 end
                 
-                local completionReason = lastFerretResult == "MaxLevel" and "Max Level 100!" or string.format("Level %d!", v2TargetLevel)
-                
                 WindUI:Notify({
                     Title = "✅ Level Complete!",
-                    Content = string.format("%s reached %s", v2CurrentName, completionReason),
+                    Content = string.format("%s reached Level %d!", v2CurrentName, v2CurrentAge),
                     Duration = 5,
                     Icon = "check-circle"
                 })
