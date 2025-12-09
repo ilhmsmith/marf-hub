@@ -909,7 +909,7 @@ local v2SelectedPetToAdd = nil
 local v2SelectedLeveling = nil
 local v2LevelingQueue = {}
 local v2CurrentQueueIndex = 1
-local v2FerretSlot = 4       -- Default slot 4
+local v2FerretSlot = 5       -- Default slot 5
 local v2TargetLevel = 100    -- Default target level
 local v2AutoEnabled = false
 local v2PetEquipped = false
@@ -1044,7 +1044,7 @@ LevelingV2Tab:Dropdown({
     Title = "Ferret Slot",
     Desc = "Slot containing French Fry Ferret (2-3 recommended)",
     Values = {"Slot 1", "Slot 2", "Slot 3", "Slot 4", "Slot 5", "Slot 6"},
-    Value = "Slot 4",
+    Value = "Slot 5",
     Callback = function(v)
         v2FerretSlot = tonumber(v:match("%d"))
     end
