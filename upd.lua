@@ -593,6 +593,8 @@ local LvlQueueParagraph = MainTab:Paragraph({
 })
 
 local function updateLvlQueueDisplay()
+    if not LvlQueueParagraph then return end
+    
     if #lvlLevelingQueue == 0 then
         LvlQueueParagraph:SetTitle("Queue (0 pets)")
         LvlQueueParagraph:SetDesc("(Empty - add pets above)")
@@ -1021,10 +1023,10 @@ LevelingV2Tab:Button({
                 
                 queueText = queueText .. string.format("%d. %s [Lv.%d]\n", i, displayStr, pAge)
             end
-            V2QueueParagraph:Set({
-                Title = "Queue (" .. #v2LevelingQueue .. " pets)",
-                Desc = queueText ~= "" and queueText or "Empty"
-            })
+            if V2QueueParagraph then
+                V2QueueParagraph:SetTitle("Queue (" .. #v2LevelingQueue .. " pets)")
+                V2QueueParagraph:SetDesc(queueText ~= "" and queueText or "Empty")
+            end
             
             WindUI:Notify({
                 Title = "Added to Queue",
@@ -1055,10 +1057,10 @@ LevelingV2Tab:Button({
         v2CompletedPets = {}
         v2TriggerCount = 0
         
-        V2QueueParagraph:Set({
-            Title = "Queue (0 pets)",
-            Desc = "Empty"
-        })
+        if V2QueueParagraph then
+            V2QueueParagraph:SetTitle("Queue (0 pets)")
+            V2QueueParagraph:SetDesc("Empty")
+        end
         
         WindUI:Notify({
             Title = "Queue Cleared",
@@ -1277,6 +1279,8 @@ local NmQueueParagraph = NightmareTab:Paragraph({
 })
 
 local function updateNmQueueDisplay()
+    if not NmQueueParagraph then return end
+    
     if #levelingQueue == 0 then
         NmQueueParagraph:SetTitle("Queue (0 pets)")
         NmQueueParagraph:SetDesc("(Empty - add pets above)")
@@ -1727,6 +1731,8 @@ local ElQueueParagraph = ElephantTab:Paragraph({
 })
 
 local function updateElQueueDisplay()
+    if not ElQueueParagraph then return end
+    
     if #elLevelingQueue == 0 then
         ElQueueParagraph:SetTitle("Queue (0 pets)")
         ElQueueParagraph:SetDesc("(Empty - add pets above)")
@@ -2133,23 +2139,25 @@ task.spawn(function()
         end
         
         local lvlEquippedTxt = lvlPetEquipped and "✅ Yes" or "❌ No"
-        local lvlQueueTxt = string.format("%d/%d", lvlCurrentQueueIndex, #lvlLevelingQueue)
+        local lvlQueueTxt = #lvlLevelingQueue > 0 and string.format("%d/%d", lvlCurrentQueueIndex, #lvlLevelingQueue) or "0/0"
         
-        LvlInfoParagraph:SetDesc(string.format(
-            "⏱ Cooldown: %s\n📍 Slot: %s\n🐾 Pet: %s\n🏷 Type: %s\n✨ Mutation: %s%s\n📊 Age: %d/%d\n📋 Queue: %s\n✅ Done: %d\n🔌 Equipped: %s\n⚡ Mode: %s",
-            cdTxt,
-            slotTxt,
-            lvlPetName,
-            lvlPetType,
-            lvlMutationEmoji,
-            lvlPetMutation,
-            lvlPetAge,
-            lvlTargetLevel,
-            lvlQueueTxt,
-            #lvlCompletedPets,
-            lvlEquippedTxt,
-            lvlModeTxt
-        ))
+        if LvlInfoParagraph then
+            LvlInfoParagraph:SetDesc(string.format(
+                "⏱ Cooldown: %s\n📍 Slot: %s\n🐾 Pet: %s\n🏷 Type: %s\n✨ Mutation: %s%s\n📊 Age: %d/%d\n📋 Queue: %s\n✅ Done: %d\n🔌 Equipped: %s\n⚡ Mode: %s",
+                cdTxt,
+                slotTxt,
+                lvlPetName,
+                lvlPetType,
+                lvlMutationEmoji,
+                lvlPetMutation,
+                lvlPetAge,
+                lvlTargetLevel,
+                lvlQueueTxt,
+                #lvlCompletedPets,
+                lvlEquippedTxt,
+                lvlModeTxt
+            ))
+        end
         
         --==============================================================--
         -- LEVELING TAB Logic
@@ -2266,22 +2274,19 @@ task.spawn(function()
         local v2QueueDisplay = #v2LevelingQueue > 0 and string.format("%d/%d", v2CurrentQueueIndex, #v2LevelingQueue) or "0/0"
         
         if V2InfoParagraph then
-            V2InfoParagraph:Set({
-                Title = "Status Information",
-                Desc = string.format(
-                    "📍 Slot: %d\n🐾 Pet: %s\n🏷 Type: %s\n📊 Age: %d/%d\n🍟 Triggers: %d\n📋 Queue: %s\n✅ Done: %d\n🔌 Equipped: %s\n⚡ Mode: %s",
-                    v2FerretSlot,
-                    v2PetName,
-                    v2PetType,
-                    v2PetAge,
-                    v2TargetLevel,
-                    v2TriggerCount,
-                    v2QueueDisplay,
-                    #v2CompletedPets,
-                    v2EquipTxt,
-                    v2ModeTxt
-                )
-            })
+            V2InfoParagraph:SetDesc(string.format(
+                "📍 Slot: %d\n🐾 Pet: %s\n🏷 Type: %s\n📊 Age: %d/%d\n🍟 Triggers: %d\n📋 Queue: %s\n✅ Done: %d\n🔌 Equipped: %s\n⚡ Mode: %s",
+                v2FerretSlot,
+                v2PetName,
+                v2PetType,
+                v2PetAge,
+                v2TargetLevel,
+                v2TriggerCount,
+                v2QueueDisplay,
+                #v2CompletedPets,
+                v2EquipTxt,
+                v2ModeTxt
+            ))
         end
         
         --==============================================================--
@@ -2403,24 +2408,26 @@ task.spawn(function()
         
         local phaseTxt = nmPhase == "MUTATION" and "🌙 MUTATION" or "📈 LEVELING"
         local equippedTxt = nmPetEquipped and "✅ Yes" or "❌ No"
-        local queueTxt = string.format("%d/%d", currentQueueIndex, #levelingQueue)
+        local queueTxt = #levelingQueue > 0 and string.format("%d/%d", currentQueueIndex, #levelingQueue) or "0/0"
         
-        NmInfoParagraph:SetDesc(string.format(
-            "📍 Phase: %s\n⏱ Cooldown: %s\n📍 Slot: %s\n🐾 Pet: %s\n🏷 Type: %s\n✨ Mutation: %s%s\n📊 Age: %d/%d\n📋 Queue: %s\n✅ Done: %d\n🔌 Equipped: %s\n⚡ Mode: %s",
-            phaseTxt,
-            cdTxt,
-            slotTxt,
-            petName,
-            petType,
-            mutationEmoji,
-            petMutation,
-            petAge,
-            targetLevel,
-            queueTxt,
-            #nmCompletedPets,
-            equippedTxt,
-            nmModeTxt
-        ))
+        if NmInfoParagraph then
+            NmInfoParagraph:SetDesc(string.format(
+                "📍 Phase: %s\n⏱ Cooldown: %s\n📍 Slot: %s\n🐾 Pet: %s\n🏷 Type: %s\n✨ Mutation: %s%s\n📊 Age: %d/%d\n📋 Queue: %s\n✅ Done: %d\n🔌 Equipped: %s\n⚡ Mode: %s",
+                phaseTxt,
+                cdTxt,
+                slotTxt,
+                petName,
+                petType,
+                mutationEmoji,
+                petMutation,
+                petAge,
+                targetLevel,
+                queueTxt,
+                #nmCompletedPets,
+                equippedTxt,
+                nmModeTxt
+            ))
+        end
         
         --==============================================================--
         -- PHASE 1: LEVELING - Level current pet to target
@@ -2646,27 +2653,29 @@ task.spawn(function()
         
         local elPhaseTxt = elPhase == "ELEPHANT" and "🐘 ELEPHANT" or "📈 LEVELING"
         local elEquippedTxt = elPetEquipped and "✅ Yes" or "❌ No"
-        local elQueueTxt = string.format("%d/%d", elCurrentQueueIndex, #elLevelingQueue)
+        local elQueueTxt = #elLevelingQueue > 0 and string.format("%d/%d", elCurrentQueueIndex, #elLevelingQueue) or "0/0"
         local elMimicCdTxt = (mimicRemain and string.format("%.2fs", mimicRemain) or "—")
         local elElephantCdTxt = (elephantRemain and string.format("%.2fs", elephantRemain) or "—")
         
-        ElInfoParagraph:SetDesc(string.format(
-            "📍 Phase: %s\n⏱ Mimic CD: %s\n⏱ Elephant CD: %s\n📍 Slot: %s\n🐾 Pet: %s\n🏷 Type: %s\n📊 Age: %d/%d\n⚖️ Weight: %.2f KG\n🔄 Blessings: %d\n📋 Queue: %s\n✅ Done: %d\n🔌 Equipped: %s\n⚡ Mode: %s",
-            elPhaseTxt,
-            elMimicCdTxt,
-            elElephantCdTxt,
-            slotTxt,
-            elPetName,
-            elPetType,
-            elPetAge,
-            elTargetLevel,
-            elPetWeight,
-            elBlessingCount,
-            elQueueTxt,
-            #elCompletedPets,
-            elEquippedTxt,
-            elModeTxt
-        ))
+        if ElInfoParagraph then
+            ElInfoParagraph:SetDesc(string.format(
+                "📍 Phase: %s\n⏱ Mimic CD: %s\n⏱ Elephant CD: %s\n📍 Slot: %s\n🐾 Pet: %s\n🏷 Type: %s\n📊 Age: %d/%d\n⚖️ Weight: %.2f KG\n🔄 Blessings: %d\n📋 Queue: %s\n✅ Done: %d\n🔌 Equipped: %s\n⚡ Mode: %s",
+                elPhaseTxt,
+                elMimicCdTxt,
+                elElephantCdTxt,
+                slotTxt,
+                elPetName,
+                elPetType,
+                elPetAge,
+                elTargetLevel,
+                elPetWeight,
+                elBlessingCount,
+                elQueueTxt,
+                #elCompletedPets,
+                elEquippedTxt,
+                elModeTxt
+            ))
+        end
         
         --==============================================================--
         -- ELEPHANT TAB Logic - PHASE 1: LEVELING
