@@ -76,7 +76,7 @@ local MainTab = Window:Tab({
 
 local LevelingV2Tab = Window:Tab({
     Title = "Auto Leveling V2",
-    Icon = "french-fries",
+    Icon = "flame",
 })
 
 local NightmareTab = Window:Tab({
