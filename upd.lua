@@ -114,7 +114,7 @@ local function sendWebhook(title, description, color, fields)
         description = description,
         color = color or 5763719,
         fields = fields or {},
-        footer = {text = "Grow a Garden • Marf Hub v1.1"},
+        footer = {text = "Grow a Garden • Marf Hub v1.2"},
         timestamp = os.date("!%Y-%m-%dT%H:%M:%SZ")
     }
     
@@ -260,7 +260,7 @@ if Notification then
             
             -- Check for Ferret notification (Leveling V2)
             -- Level +1: "🍟 French Fry Ferret increased a Peacock's level by 1!"
-            -- Max level: "🍟 French Fry Ferret couldn't find a pet to increase level..."
+            -- Max level: "🍟 French Fry Ferret couldn't find a pet to increase level, so it shared some fries with Peacock!"
             if message:find("French Fry Ferret increased") then
                 lastFerretResult = "LevelUp"
                 v2TriggerCount = v2TriggerCount + 1
@@ -519,11 +519,11 @@ local function formatPetForDropdown(pet)
 end
 
 --==============================================================--
--- LEVELING TAB (Enhanced - Same as Auto Nightmare without mutation)
+-- AUTO LEVELING V1 TAB
 --==============================================================--
 MainTab:Paragraph({
-    Title = "🐾 Auto Leveling",
-    Desc = "Level multiple pets automatically!\n• Queue system for batch leveling\n• Real-time age tracking\n• Auto equip/unequip on slot switch",
+    Title = "🐾 Auto Leveling V1",
+    Desc = "Level up with Mimic + Dilophosaurus!\n• Best for level 1-50\n• Queue system for batch leveling\n• Auto slot switching",
 })
 
 MainTab:Divider()
@@ -971,6 +971,12 @@ local V2LevelingDropdown = LevelingV2Tab:Dropdown({
     end
 })
 
+-- Queue Display (declared first so buttons can use it)
+local V2QueueParagraph = LevelingV2Tab:Paragraph({
+    Title = "Queue (0 pets)",
+    Desc = "Empty",
+})
+
 -- Add to Queue Button
 LevelingV2Tab:Button({
     Title = "➕ Add to Queue",
@@ -1061,12 +1067,6 @@ LevelingV2Tab:Button({
             Icon = "trash-2"
         })
     end
-})
-
--- Queue Display
-local V2QueueParagraph = LevelingV2Tab:Paragraph({
-    Title = "Queue (0 pets)",
-    Desc = "Empty",
 })
 
 LevelingV2Tab:Divider()
@@ -2151,7 +2151,7 @@ task.spawn(function()
             lvlModeTxt
         ))
         
---==============================================================--
+        --==============================================================--
         -- LEVELING TAB Logic
         --==============================================================--
         if lvlAutoEnabled and lvlSelectedLeveling then
@@ -2205,6 +2205,7 @@ task.spawn(function()
                         {name = "🏷 Type", value = lvlPetType, inline = true},
                         {name = "📊 Level", value = tostring(lvlTargetLevel), inline = true},
                         {name = "📋 Queue", value = string.format("%d/%d", lvlCurrentQueueIndex, #lvlLevelingQueue), inline = true},
+                        {name = "📍 Mode", value = "Auto Leveling V1", inline = true},
                     }
                 )
                 
@@ -2245,7 +2246,7 @@ task.spawn(function()
                         {
                             {name = "✅ Completed", value = string.format("%d pets", #lvlCompletedPets), inline = true},
                             {name = "📊 Target", value = string.format("Level %d", lvlTargetLevel), inline = true},
-                            {name = "📋 Mode", value = "Leveling", inline = true},
+                            {name = "📋 Mode", value = "Auto Leveling V1", inline = true},
                         }
                     )
                 end
@@ -2262,24 +2263,26 @@ task.spawn(function()
         local v2PetAge = v2PetData and v2PetData.age or 0
         
         local v2EquipTxt = v2PetEquipped and "✅ Yes" or "❌ No"
+        local v2QueueDisplay = #v2LevelingQueue > 0 and string.format("%d/%d", v2CurrentQueueIndex, #v2LevelingQueue) or "0/0"
         
-        V2InfoParagraph:Set({
-            Title = "Status Information",
-            Desc = string.format(
-                "📍 Slot: %d\n🐾 Pet: %s\n🏷 Type: %s\n📊 Age: %d/%d\n🍟 Triggers: %d\n📋 Queue: %d/%d\n✅ Done: %d\n🔌 Equipped: %s\n⚡ Mode: %s",
-                v2FerretSlot,
-                v2PetName,
-                v2PetType,
-                v2PetAge,
-                v2TargetLevel,
-                v2TriggerCount,
-                v2CurrentQueueIndex,
-                #v2LevelingQueue,
-                #v2CompletedPets,
-                v2EquipTxt,
-                v2ModeTxt
-            )
-        })
+        if V2InfoParagraph then
+            V2InfoParagraph:Set({
+                Title = "Status Information",
+                Desc = string.format(
+                    "📍 Slot: %d\n🐾 Pet: %s\n🏷 Type: %s\n📊 Age: %d/%d\n🍟 Triggers: %d\n📋 Queue: %s\n✅ Done: %d\n🔌 Equipped: %s\n⚡ Mode: %s",
+                    v2FerretSlot,
+                    v2PetName,
+                    v2PetType,
+                    v2PetAge,
+                    v2TargetLevel,
+                    v2TriggerCount,
+                    v2QueueDisplay,
+                    #v2CompletedPets,
+                    v2EquipTxt,
+                    v2ModeTxt
+                )
+            })
+        end
         
         --==============================================================--
         -- LEVELING V2 TAB Logic
@@ -3069,7 +3072,7 @@ SettingsTab:Button({
                 {name = "🏷 Type", value = "Bald Eagle", inline = true},
                 {name = "📊 Level", value = "30", inline = true},
             },
-            footer = {text = "Grow a Garden • Marf Hub v1.1"},
+            footer = {text = "Grow a Garden • Marf Hub v1.2"},
             timestamp = os.date("!%Y-%m-%dT%H:%M:%SZ")
         }
         
@@ -3167,7 +3170,7 @@ SettingsTab:Button({
 -- Initialize
 --==============================================================--
 WindUI:Notify({
-    Title = "Marf Hub v1.1",
+    Title = "Marf Hub v1.2",
     Content = "Script loaded successfully!\nLeveling, Nightmare & Elephant tabs ready.",
     Duration = 6,
     Icon = "zap",
