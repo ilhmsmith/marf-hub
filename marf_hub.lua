@@ -2508,118 +2508,119 @@ task.spawn(function()
                     task.wait(1)
                     
                     if currentMutation == "Nightmare" then
-                    -- ✅ SUCCESS! Got Nightmare!
-                    WindUI:Notify({
-                        Title = "🌙 NIGHTMARE GET!",
-                        Content = string.format("%s got Nightmare! 🌙", freshPetName),
-                        Duration = 8,
-                        Icon = "check-circle"
-                    })
-                    
-                    -- Webhook: Nightmare Get
-                    local freshType = freshPetData and freshPetData.type or "Unknown"
-                    sendWebhook(
-                        "🌙 Nightmare Get!",
-                        "Pet successfully mutated to Nightmare!",
-                        9498256,
-                        {
-                            {name = "🐾 Pet", value = freshPetName, inline = true},
-                            {name = "🏷 Type", value = freshType, inline = true},
-                            {name = "✨ Mutation", value = "Nightmare", inline = true},
-                            {name = "📋 Queue", value = string.format("%d/%d", currentQueueIndex, #levelingQueue), inline = true},
-                            {name = "✅ Done", value = string.format("%d pets", #nmCompletedPets + 1), inline = true},
-                        }
-                    )
-                    
-                    task.wait(1)
-                    
-                    pcall(function()
-                        PetsService:FireServer("UnequipPet", nmSelectedLeveling)
-                    end)
-                    nmPetEquipped = false
-                    
-                    table.insert(nmCompletedPets, nmSelectedLeveling)
-                    
-                    if currentQueueIndex < #levelingQueue then
-                        currentQueueIndex = currentQueueIndex + 1
-                        nmSelectedLeveling = levelingQueue[currentQueueIndex]
-                        nmPhase = "LEVELING"
-                        
-                        local nextPetData = getPetDataFromService(nmSelectedLeveling)
-                        local nextPetName = nextPetData and (nextPetData.name ~= "" and nextPetData.name or nextPetData.type) or "Unknown"
-                        
+                        -- ✅ SUCCESS! Got Nightmare!
                         WindUI:Notify({
-                            Title = "🔄 Next Pet",
-                            Content = string.format("Now leveling: %s (%d/%d)", nextPetName, currentQueueIndex, #levelingQueue),
-                            Duration = 5,
-                            Icon = "arrow-right"
+                            Title = "🌙 NIGHTMARE GET!",
+                            Content = string.format("%s got Nightmare! 🌙", freshPetName),
+                            Duration = 8,
+                            Icon = "check-circle"
                         })
                         
-                        task.wait(1)
-                        swapTo(visualToInternal(nmMimicDilopSlot))
-                    else
-                        nmAutoEnabled = false
-                        NmAutoToggle:Set(false)
-                        nmPhase = "LEVELING"
-                        
-                        WindUI:Notify({
-                            Title = "🎉 ALL COMPLETE!",
-                            Content = string.format("All %d pets got Nightmare! 🌙", #nmCompletedPets),
-                            Duration = 15,
-                            Icon = "award"
-                        })
-                        
-                        -- Webhook: All Complete (Nightmare)
+                        -- Webhook: Nightmare Get
+                        local freshType = freshPetData and freshPetData.type or "Unknown"
                         sendWebhook(
-                            "🎉 ALL COMPLETE!",
-                            "All pets got Nightmare mutation!",
-                            5814783,
+                            "🌙 Nightmare Get!",
+                            "Pet successfully mutated to Nightmare!",
+                            9498256,
                             {
-                                {name = "✅ Completed", value = string.format("%d pets", #nmCompletedPets), inline = true},
+                                {name = "🐾 Pet", value = freshPetName, inline = true},
+                                {name = "🏷 Type", value = freshType, inline = true},
                                 {name = "✨ Mutation", value = "Nightmare", inline = true},
-                                {name = "📋 Mode", value = "Auto Nightmare", inline = true},
+                                {name = "📋 Queue", value = string.format("%d/%d", currentQueueIndex, #levelingQueue), inline = true},
+                                {name = "✅ Done", value = string.format("%d pets", #nmCompletedPets + 1), inline = true},
                             }
                         )
-                    end
-                else
-                    -- ❌ Wrong mutation, cleanse and re-level
-                    WindUI:Notify({
-                        Title = "❌ Wrong Mutation",
-                        Content = string.format("%s got %s instead. Cleansing...", freshPetName, currentMutation),
-                        Duration = 5,
-                        Icon = "x-circle"
-                    })
-                    
-                    task.wait(2)
-                    
-                    local success, msg = applyCleansingShardToPet(nmSelectedLeveling)
-                    
-                    if success then
-                        WindUI:Notify({
-                            Title = "🧹 Cleansed",
-                            Content = string.format("%s cleansed. Back to leveling...", freshPetName),
-                            Duration = 5,
-                            Icon = "refresh-cw"
-                        })
                         
-                        task.wait(2)
+                        task.wait(1)
                         
                         pcall(function()
                             PetsService:FireServer("UnequipPet", nmSelectedLeveling)
                         end)
                         nmPetEquipped = false
                         
-                        nmPhase = "LEVELING"
+                        table.insert(nmCompletedPets, nmSelectedLeveling)
                         
-                        task.wait(1)
-                        swapTo(visualToInternal(nmMimicDilopSlot))
+                        if currentQueueIndex < #levelingQueue then
+                            currentQueueIndex = currentQueueIndex + 1
+                            nmSelectedLeveling = levelingQueue[currentQueueIndex]
+                            nmPhase = "LEVELING"
+                            
+                            local nextPetData = getPetDataFromService(nmSelectedLeveling)
+                            local nextPetName = nextPetData and (nextPetData.name ~= "" and nextPetData.name or nextPetData.type) or "Unknown"
+                            
+                            WindUI:Notify({
+                                Title = "🔄 Next Pet",
+                                Content = string.format("Now leveling: %s (%d/%d)", nextPetName, currentQueueIndex, #levelingQueue),
+                                Duration = 5,
+                                Icon = "arrow-right"
+                            })
+                            
+                            task.wait(1)
+                            swapTo(visualToInternal(nmMimicDilopSlot))
+                        else
+                            nmAutoEnabled = false
+                            NmAutoToggle:Set(false)
+                            nmPhase = "LEVELING"
+                            
+                            WindUI:Notify({
+                                Title = "🎉 ALL COMPLETE!",
+                                Content = string.format("All %d pets got Nightmare! 🌙", #nmCompletedPets),
+                                Duration = 15,
+                                Icon = "award"
+                            })
+                            
+                            -- Webhook: All Complete (Nightmare)
+                            sendWebhook(
+                                "🎉 ALL COMPLETE!",
+                                "All pets got Nightmare mutation!",
+                                5814783,
+                                {
+                                    {name = "✅ Completed", value = string.format("%d pets", #nmCompletedPets), inline = true},
+                                    {name = "✨ Mutation", value = "Nightmare", inline = true},
+                                    {name = "📋 Mode", value = "Auto Nightmare", inline = true},
+                                }
+                            )
+                        end
                     else
+                        -- ❌ Wrong mutation, cleanse and re-level
                         WindUI:Notify({
-                            Title = "⚠️ Cleanse Failed",
-                            Content = msg,
+                            Title = "❌ Wrong Mutation",
+                            Content = string.format("%s got %s instead. Cleansing...", freshPetName, currentMutation),
                             Duration = 5,
-                            Icon = "alert-triangle"
+                            Icon = "x-circle"
                         })
+                        
+                        task.wait(2)
+                        
+                        local success, msg = applyCleansingShardToPet(nmSelectedLeveling)
+                        
+                        if success then
+                            WindUI:Notify({
+                                Title = "🧹 Cleansed",
+                                Content = string.format("%s cleansed. Back to leveling...", freshPetName),
+                                Duration = 5,
+                                Icon = "refresh-cw"
+                            })
+                            
+                            task.wait(2)
+                            
+                            pcall(function()
+                                PetsService:FireServer("UnequipPet", nmSelectedLeveling)
+                            end)
+                            nmPetEquipped = false
+                            
+                            nmPhase = "LEVELING"
+                            
+                            task.wait(1)
+                            swapTo(visualToInternal(nmMimicDilopSlot))
+                        else
+                            WindUI:Notify({
+                                Title = "⚠️ Cleanse Failed",
+                                Content = msg,
+                                Duration = 5,
+                                Icon = "alert-triangle"
+                            })
+                        end
                     end
                 end
             end
