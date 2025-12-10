@@ -44,10 +44,6 @@ local antiAfkEnabled = true
 local webhookUrl = ""
 local webhookEnabled = false
 
--- Mutation detection via Notification
-local lastMutationResult = nil  -- nil = waiting, "Nightmare" = success, "Other" = wrong mutation
-local lastMutationName = nil    -- Store the actual mutation name
-
 -- Elephant detection via Notification
 local lastElephantResult = nil  -- nil = waiting, "Blessed" = success, "MaxWeight" = cap reached
 local lastElephantWeight = nil  -- Total weight from notification
@@ -224,24 +220,6 @@ end
 if Notification then
     Notification.OnClientEvent:Connect(function(message)
         if message and type(message) == "string" then
-            -- Check for mutation notification
-            -- Format: "💀 Mimic Octopus's power twisted your [Pet] into a level 1 <font color='#...'>MutationName</font> mutation!"
-            if message:find("twisted your") and message:find("mutation") then
-                -- Extract mutation name from <font color='...'>MutationName</font>
-                local mutationName = message:match("<font color='[^']+'>([^<]+)</font>")
-                
-                if mutationName then
-                    lastMutationName = mutationName
-                    if mutationName == "Nightmare" then
-                        lastMutationResult = "Nightmare"
-                    else
-                        lastMutationResult = "Other"
-                    end
-                    
-                    print("[Marf Hub] Mutation detected:", mutationName)
-                end
-            end
-            
             -- Check for Elephant blessing notification
             -- Success: "🐘 Elephant blessed your Bunny! Age reset to 1 and gained +0.1 KG (2.06 KG total)!"
             -- Max weight: "🐘 Elephant trumpeted a blessing, but found no old pets below the weight cap!"
@@ -2510,8 +2488,6 @@ task.spawn(function()
                     PetsService:FireServer("EquipPet", nmSelectedLeveling, CFrame.new(0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0))
                 end)
                 nmPetEquipped = true
-                lastMutationResult = nil
-                lastMutationName = nil
                 
                 WindUI:Notify({
                     Title = "🐾 Mutation: Pet Equipped",
@@ -2521,14 +2497,17 @@ task.spawn(function()
                 })
             end
             
-            -- Check if mutation was detected via Notification
-            if nmPetEquipped and lastMutationResult then
-                task.wait(1)
-                
+            -- Check mutation via realtime petData (not notification)
+            if nmPetEquipped then
                 local freshPetData = getPetDataFromService(nmSelectedLeveling)
+                local currentMutation = freshPetData and freshPetData.mutation or "Normal"
                 local freshPetName = freshPetData and (freshPetData.name ~= "" and freshPetData.name or freshPetData.type) or "Unknown"
                 
-                if lastMutationResult == "Nightmare" then
+                -- Only process if mutation changed (not Normal/None anymore)
+                if currentMutation ~= "Normal" and currentMutation ~= "None" and currentMutation ~= "—" then
+                    task.wait(1)
+                    
+                    if currentMutation == "Nightmare" then
                     -- ✅ SUCCESS! Got Nightmare!
                     WindUI:Notify({
                         Title = "🌙 NIGHTMARE GET!",
@@ -2558,8 +2537,6 @@ task.spawn(function()
                         PetsService:FireServer("UnequipPet", nmSelectedLeveling)
                     end)
                     nmPetEquipped = false
-                    lastMutationResult = nil
-                    lastMutationName = nil
                     
                     table.insert(nmCompletedPets, nmSelectedLeveling)
                     
@@ -2608,7 +2585,7 @@ task.spawn(function()
                     -- ❌ Wrong mutation, cleanse and re-level
                     WindUI:Notify({
                         Title = "❌ Wrong Mutation",
-                        Content = string.format("%s got %s instead. Cleansing...", freshPetName, lastMutationName or "Unknown"),
+                        Content = string.format("%s got %s instead. Cleansing...", freshPetName, currentMutation),
                         Duration = 5,
                         Icon = "x-circle"
                     })
@@ -2631,8 +2608,6 @@ task.spawn(function()
                             PetsService:FireServer("UnequipPet", nmSelectedLeveling)
                         end)
                         nmPetEquipped = false
-                        lastMutationResult = nil
-                        lastMutationName = nil
                         
                         nmPhase = "LEVELING"
                         
@@ -2645,8 +2620,6 @@ task.spawn(function()
                             Duration = 5,
                             Icon = "alert-triangle"
                         })
-                        lastMutationResult = nil
-                        lastMutationName = nil
                     end
                 end
             end
